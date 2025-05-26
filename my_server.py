@@ -79,7 +79,7 @@ async def get_gallery_posts(
     }
     
     try:
-        data = await fetch_dcinside_data("posts", params)
+        data = await fetch_dcinside_data("api/gallery/posts", params)
         return {
             "gallery_id": id,
             "page": page,
