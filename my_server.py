@@ -5,38 +5,24 @@ from typing import Optional, Dict, Any
 
 mcp = FastMCP(name="legacy-api-mcp-server")
 
-# 캐시 저장소
-_cache: Dict[str, Any] = {}
-
-async def fetch_dcinside_data(endpoint: str, params: dict, use_cache: bool = True) -> dict:
+async def fetch_dcinside_data(endpoint: str, params: dict) -> dict:
     """
     DC Inside API에서 데이터를 가져옵니다.
     
     Args:
         endpoint: API 엔드포인트
         params: API 요청 매개변수
-        use_cache: 캐시 사용 여부
     
     Returns:
         dict: API 응답 데이터
     """
-    cache_key = f"{endpoint}:{json.dumps(params, sort_keys=True)}"
-    
-    if use_cache and cache_key in _cache:
-        return _cache[cache_key]
-    
     base_url = "http://127.0.0.1:8000"
     async with aiohttp.ClientSession() as session:
         async with session.get(f"{base_url}/{endpoint}", params=params) as response:
             if response.status != 200:
                 raise Exception(f"API 요청 실패: {response.status}")
             
-            data = await response.json()
-            
-            if use_cache:
-                _cache[cache_key] = data
-            
-            return data
+            return await response.json()
 
 @mcp.tool()
 def greet(name: str) -> str:
@@ -71,8 +57,7 @@ def add(a: int, b: int) -> int:
 async def get_gallery_posts(
     id: str,
     page: int = 1,
-    list_num: int = 50,
-    use_cache: bool = True
+    list_num: int = 50
 ) -> dict:
     """
     DC Inside 갤러리의 게시글 목록을 가져옵니다.
@@ -81,7 +66,6 @@ async def get_gallery_posts(
         id: 갤러리 식별자 (예: 'mabinogimobile')
         page: 페이지 번호 (기본값: 1)
         list_num: 페이지당 게시글 수 (기본값: 50)
-        use_cache: 캐시된 결과 사용 여부 (기본값: True)
     
     Returns:
         dict: 갤러리 게시글 목록 정보
@@ -95,7 +79,7 @@ async def get_gallery_posts(
     }
     
     try:
-        data = await fetch_dcinside_data("posts", params, use_cache)
+        data = await fetch_dcinside_data("posts", params)
         return {
             "gallery_id": id,
             "page": page,
@@ -113,15 +97,13 @@ async def get_gallery_posts(
 
 @mcp.tool()
 async def get_gallery_info(
-    id: str,
-    use_cache: bool = True
+    id: str
 ) -> dict:
     """
     DC Inside 갤러리의 정보를 가져옵니다.
     
     Args:
         id: 갤러리 식별자 (예: 'mabinogimobile')
-        use_cache: 캐시된 결과 사용 여부 (기본값: True)
     
     Returns:
         dict: 갤러리 정보
@@ -133,7 +115,7 @@ async def get_gallery_info(
     }
     
     try:
-        data = await fetch_dcinside_data("info", params, use_cache)
+        data = await fetch_dcinside_data("info", params)
         return {
             "gallery_id": id,
             "name": data.get("name", ""),
